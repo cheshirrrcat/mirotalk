@@ -1,9 +1,9 @@
 /*
  ██████ ██      ██ ███████ ███    ██ ████████ 
 ██      ██      ██ ██      ████   ██    ██    
-██      ██      ██ █████   ██ ██  ██    ██    
-██      ██      ██ ██      ██  ██ ██    ██    
- ██████ ███████ ██ ███████ ██   ████    ██   
+██      ██      ██ █████   ██ ██  ██    ██ 
+██      ██      ██ ██      ██  ██ ██    ██ 
+ ██████ ███████ ██ ███████ ██   ████    ██ 
 */
 
 /**
@@ -158,6 +158,8 @@ const buttons = {
         showDocumentPipBtn: showDocumentPipBtn,
         showMySettingsBtn: true,
         showAboutBtn: true, // Please keep me always true, Thank you!
+        showCollectPhoneNumberBtn: true,
+        showCollectEmailBtn: true,
     },
     chat: {
         showMaxBtn: true,
@@ -244,6 +246,8 @@ const documentPiPBtn = getId('documentPiPBtn');
 const mySettingsBtn = getId('mySettingsBtn');
 const aboutBtn = getId('aboutBtn');
 const leaveRoomBtn = getId('leaveRoomBtn');
+const collectPhoneNumberBtn = getId('collectPhoneNumberBtn');
+const collectEmailBtn = getId('collectEmailBtn');
 
 // Room Emoji Picker
 const closeEmojiPickerContainer = getId('closeEmojiPickerContainer');
@@ -786,6 +790,8 @@ function refreshMainButtonsToolTipPlacement() {
     setTippy(mySettingsBtn, 'Open the settings', placement);
     setTippy(aboutBtn, 'About this project', placement);
     setTippy(leaveRoomBtn, 'Leave this room', placement);
+    setTippy(collectPhoneNumberBtn, 'Send us your phone number', placement);
+    setTippy(collectEmailBtn, 'Send us your email', placement);
 }
 
 /**
@@ -1271,6 +1277,8 @@ function handleButtonsRule() {
     elemDisplay(documentPiPBtn, buttons.main.showDocumentPipBtn);
     elemDisplay(mySettingsBtn, buttons.main.showMySettingsBtn);
     elemDisplay(aboutBtn, buttons.main.showAboutBtn);
+    elemDisplay(collectPhoneNumberBtn, buttons.main.showCollectPhoneNumberBtn);
+    elemDisplay(collectEmailBtn, buttons.main.showCollectEmailBtn);
     // chat
     elemDisplay(msgerMaxBtn, !isMobileDevice && buttons.chat.showMaxBtn);
     elemDisplay(msgerSaveBtn, buttons.chat.showSaveMessageBtn);
@@ -3746,6 +3754,7 @@ function manageLeftButtons() {
     setMySettingsBtn();
     setAboutBtn();
     setLeaveRoomBtn();
+    setCollectClientDataBtns();
 }
 
 /**
@@ -4546,6 +4555,18 @@ function setLeaveRoomBtn() {
 }
 
 /**
+ * Open popup to collect client data
+ */
+function setCollectClientDataBtns() {
+    collectPhoneNumberBtn.addEventListener('click', async (e) => {
+        collectClientData('phone');
+    });
+    collectEmailBtn.addEventListener('click', async (e) => {
+        collectClientData('email');
+    });
+}
+
+/**
  * Handle left buttons - status menù show - hide on body mouse move
  */
 function handleBodyOnMouseMove() {
@@ -5112,7 +5133,7 @@ async function shareRoomUrl() {
             /*
             This feature is available only in secure contexts (HTTPS),
             in some or all supporting browsers and mobile devices
-            console.error("navigator.share", err); 
+            console.error("navigator.share", err);
             */
             console.error('Navigator share error', err);
 
@@ -9342,6 +9363,53 @@ function leaveFeedback() {
 
 function redirectOnLeave() {
     redirectActive ? openURL(redirectURL) : openURL('/newcall');
+}
+
+/**
+ * Collect client data
+ */
+function collectClientData(type) {
+    const typeText = type === 'phone' ? 'phone number' : 'email';
+    const title = `Leave your ${typeText}`;
+    const inputType = type === 'email' ? 'email' : 'text';
+
+    Swal.fire({
+        background: swBg,
+        position: 'center',
+        title,
+        input: inputType,
+        inputPlaceholder: `Type your ${typeText} there`,
+        inputValidator: (value) => {
+            if (!value) return 'The field must not be empty';
+
+            if (type === 'phone') {
+                const phoneRegex = /^\+?[0-9]{1,3}?[-. (]?([0-9]{1,4})?[-. )]?([0-9]{1,4})?[-. ]?([0-9]{1,4})?[-. ]?([0-9]{1,9})$/;
+                if (!phoneRegex.test(value)) {
+                    return 'Enter a valid phone number';
+                }
+
+            } else if (type === 'email') {
+                const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+                if (!emailRegex.test(value)) {
+                    return 'Enter a valid email address';
+                }
+            }
+        },
+        showCancelButton: true,
+        cancelButtonColor: 'red',
+        denyButtonColor: 'green',
+        confirmButtonText: `Submit`,
+        cancelButtonText: `Close`,
+        showClass: { popup: 'animate__animated animate__fadeInDown' },
+        hideClass: { popup: 'animate__animated animate__fadeOutUp' },
+    }).then((result) => {
+        if (result.isConfirmed) {
+            msgerInput.value = `${typeText}: ${result.value}`;
+            msgerSendBtn.click();
+
+            userLog('toast', `Your ${typeText} has been sent successfully`);
+        }
+    });
 }
 
 /**
