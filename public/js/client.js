@@ -790,8 +790,8 @@ function refreshMainButtonsToolTipPlacement() {
     setTippy(mySettingsBtn, 'Open the settings', placement);
     setTippy(aboutBtn, 'About this project', placement);
     setTippy(leaveRoomBtn, 'Leave this room', placement);
-    setTippy(collectPhoneNumberBtn, 'Send us your phone number', placement);
-    setTippy(collectEmailBtn, 'Send us your email', placement);
+    setTippy(collectPhoneNumberBtn, 'Open a popup to send a phone number', placement);
+    setTippy(collectEmailBtn, 'Open a popup to send an email', placement);
 }
 
 /**
@@ -1277,8 +1277,8 @@ function handleButtonsRule() {
     elemDisplay(documentPiPBtn, buttons.main.showDocumentPipBtn);
     elemDisplay(mySettingsBtn, buttons.main.showMySettingsBtn);
     elemDisplay(aboutBtn, buttons.main.showAboutBtn);
-    elemDisplay(collectPhoneNumberBtn, buttons.main.showCollectPhoneNumberBtn);
-    elemDisplay(collectEmailBtn, buttons.main.showCollectEmailBtn);
+    elemDisplay(collectPhoneNumberBtn, buttons.main.showCollectPhoneNumberBtn && isPresenter);
+    elemDisplay(collectEmailBtn, buttons.main.showCollectEmailBtn && isPresenter);
     // chat
     elemDisplay(msgerMaxBtn, !isMobileDevice && buttons.chat.showMaxBtn);
     elemDisplay(msgerSaveBtn, buttons.chat.showSaveMessageBtn);
@@ -2119,6 +2119,19 @@ function handleRemovePeer(config) {
     playSound('removePeer');
 
     console.log('ALL PEERS', allPeers);
+}
+
+function handleOpenPopupForPeer(peer_id) {
+    collectPhoneNumberBtn.addEventListener('click', async (e) => {
+        emitPeerAction(peer_id, 'openPhonePopup');
+
+        userLog('toast', `An event to open a popup to enter an email has been sent to your peer`);
+    });
+    collectEmailBtn.addEventListener('click', async (e) => {
+        emitPeerAction(peer_id, 'openEmailPopup');
+
+        userLog('toast', `An event to open a popup to enter a phone number has been sent to your peer`);
+    });
 }
 
 /**
@@ -2965,6 +2978,9 @@ async function loadRemoteMediaStream(stream, peers, peer_id, kind) {
             handlePeerAudioBtn(peer_id);
             // handle remote peers video on-off
             handlePeerVideoBtn(peer_id);
+            // handle open popup
+            handleOpenPopupForPeer(peer_id);
+
 
             // handle remote private messages
             buttons.remote.showPrivateMessageBtn && handlePeerPrivateMsg(peer_id, peer_name);
@@ -3754,7 +3770,6 @@ function manageLeftButtons() {
     setMySettingsBtn();
     setAboutBtn();
     setLeaveRoomBtn();
-    setCollectClientDataBtns();
 }
 
 /**
@@ -4551,18 +4566,6 @@ function setAboutBtn() {
 function setLeaveRoomBtn() {
     leaveRoomBtn.addEventListener('click', (e) => {
         leaveRoom();
-    });
-}
-
-/**
- * Open popup to collect client data
- */
-function setCollectClientDataBtns() {
-    collectPhoneNumberBtn.addEventListener('click', async (e) => {
-        collectClientData('phone');
-    });
-    collectEmailBtn.addEventListener('click', async (e) => {
-        collectClientData('email');
     });
 }
 
@@ -7603,6 +7606,12 @@ function handlePeerAction(config) {
         case 'ejectAll':
             handleKickedOut(config);
             break;
+        case 'openPhonePopup':
+            openPopupForPeer('phone');
+            break;
+        case 'openEmailPopup':
+            openPopupForPeer('email');
+            break;
     }
 }
 
@@ -9368,7 +9377,7 @@ function redirectOnLeave() {
 /**
  * Collect client data
  */
-function collectClientData(type) {
+function openPopupForPeer(type) {
     const typeText = type === 'phone' ? 'phone number' : 'email';
     const title = `Leave your ${typeText}`;
     const inputType = type === 'email' ? 'email' : 'text';
